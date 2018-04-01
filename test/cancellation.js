@@ -11,7 +11,7 @@ const Model = require('..');
 
 describe('Cancellation', () => {
     it('cancel a request', (done) => {
-        let promise = Model.query().$promise;
+        let promise = Model.list().$promise;
 
         promise.isCancelled.should.to.be.a('function');
 

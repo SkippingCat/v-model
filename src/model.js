@@ -8,11 +8,11 @@ import ModelBase from './model-base';
 
 // Model
 const Model = ModelBase.extend('', {
-    get: { method: 'GET' },
+    find: { method: 'GET' },
     save: { method: 'POST' },
     update: { method: 'PUT' },
     delete: { method: 'DELETE' },
-    query: { method: 'GET', isArray: true }
+    list: { method: 'GET', isArray: true }
 });
 
 export default Model;

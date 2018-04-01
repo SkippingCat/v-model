@@ -56,7 +56,7 @@ const app = new Vue({
     },
     methods: {
         load(id) {
-            this.post = PostModel.get({
+            this.post = PostModel.find({
                 id: id
             });
 
@@ -96,7 +96,7 @@ Default actions:
 
 ```
 {
-    get: { method: 'GET' },
+    find: { method: 'GET' },
     save: { method: 'POST' },
     update: { method: 'PUT' },
     delete: { method: 'DELETE' },
@@ -143,12 +143,12 @@ See more [axios config](https://github.com/mzabriskie/axios#request-config)
 With static method:
 
 ```javascript
-// get single post
-const post = PostModel.get({
+// find single post
+const post = PostModel.find({
     id: 1
 });
 
-// get post list
+// find post list
 const posts = PostModel.query({
     status: PostModel.PUBLISHED
 });
@@ -206,10 +206,10 @@ Usage:
 
 ```javascript
 const PostModel = Model.extend('/posts/:id', {
-    query: { method: 'get', hasPagination: true }
+    list: { method: 'get', hasPagination: true }
 });
 
-let postsData = PostModel.query({
+let postsData = PostModel.list({
     page_size: 20,
     page_num: 1
 });
@@ -236,13 +236,13 @@ Promise.config({
 });
 
 const PostModel = Model.extend('/posts/:id', {
-    query: { method: 'get', hasPagination: true }
+    list: { method: 'get', hasPagination: true }
 });
 
 new Vue({
     data() {
         return {
-            query: {
+            list: {
                 page_num: 1
             },
             itemsData: {
@@ -261,11 +261,11 @@ new Vue({
             }
 
             // make a new request
-            this.itemsData = PostModel.query(query);
+            this.itemsData = PostModel.list(list);
         }
     },
     watch: {
-        query() {
+        list() {
             this.load();
         }
     },
@@ -299,7 +299,7 @@ Usage:
 import Model from 'v-model';
 
 const PostModel = Model.extend('/posts/:id', {
-    query: { method: 'get', hasPagination: true }
+    list: { method: 'get', hasPagination: true }
 });
 
 export default {
@@ -312,7 +312,7 @@ export default {
         };
     },
     created() {
-        this.itemsData = PostModel.query({
+        this.itemsData = PostModel.list({
             page_num: 1
         });
     }

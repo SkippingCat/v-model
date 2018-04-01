@@ -105,7 +105,7 @@ export default class ModelBase {
         // support Cancellation
         return new Promise((resolve, reject, onCancel) => {
             options = lodash.assign({
-                url: Model.url(allData)
+                url: Model.url(allData) + '.json'
             }, Model.options, options);
 
             // clean
@@ -131,6 +131,7 @@ export default class ModelBase {
     static extend(url, actions, staticProps, options) {
         const Model = class Model extends this {};
 
+        // TODO
         const urlTokens = pathToRegexp.parse(url);
 
         // optional last token
@@ -244,7 +245,13 @@ export default class ModelBase {
                 }
 
                 if(!isArrayResult) {
-                    model.$reset(data);
+                    model.$set('api', data);
+                    if(name === 'find') {
+                        model.$reset(data['data'][0]);
+                    }
+                    else { // what the jb eslint rule?
+                        model.$set('data', data['data']);
+                    }
                 }
                 else {
                     const items = hasPagination ? result.items : result;
