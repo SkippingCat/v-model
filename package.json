@@ -1,6 +1,6 @@
 {
   "name": "v-model",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "V-Model is a model plugin for Vue.js, like ng-resource.",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/laoshu133/v-model.git"
+    "url": "git+ssh://git@github.com/SkippingCat/v-model.git"
   },
   "keywords": [
     "v-model",
@@ -29,9 +29,9 @@
   "author": "xiaomi",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/laoshu133/v-model/issues"
+    "url": "https://github.com/SkippingCat/v-model/issues"
   },
-  "homepage": "https://github.com/laoshu133/v-model#readme",
+  "homepage": "https://github.com/SkippingCat/v-model#readme",
   "dependencies": {
     "axios": "^0.15.3",
     "bluebird": "^3.5.0",
