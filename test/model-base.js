@@ -29,21 +29,21 @@ describe('Model base', () => {
         PostModel.PUBLISHED.should.to.be.equal(1);
     });
 
-    it('model url', () => {
-        const PostModel = ModelBase.extend('/posts/:id');
-
-        PostModel.url().should.to.be.equal('/posts');
-
-        PostModel.url({
-            id: 1
-        })
-        .should.to.be.equal('/posts/1');
-
-        PostModel.url({
-            status: 1
-        })
-        .should.to.be.equal('/posts');
-    });
+    // it('model url', () => {
+    //     const PostModel = ModelBase.extend('/posts/:id');
+    //
+    //     PostModel.url().should.to.be.equal('/posts');
+    //
+    //     PostModel.url({
+    //         id: 1
+    //     })
+    //     .should.to.be.equal('/posts/1');
+    //
+    //     PostModel.url({
+    //         status: 1
+    //     })
+    //     .should.to.be.equal('/posts');
+    // });
 
     it('create model', () => {
         const PostModel = ModelBase.extend('/posts/:id', {

@@ -33,6 +33,18 @@ const defaultGetPagination = (response, key = 'x-pagination') => {
     return pagination;
 };
 
+const urlGenerator = (url) => {
+    const urlTokens = pathToRegexp.parse(url);
+
+    // // optional last token
+    // const urlLastToken = urlTokens[urlTokens.length - 1];
+    // if(typeof urlLastToken === 'object') {
+    //     urlLastToken.optional = true;
+    // }
+
+    return pathToRegexp.tokensToFunction(urlTokens);
+};
+
 export default class ModelBase {
     static cacher = null;
     static http = axios.create();
@@ -94,19 +106,12 @@ export default class ModelBase {
             options.data
         );
 
-        // clear params
-        lodash.forEach(Model.urlTokens, token => {
-            if(token && token.name) {
-                delete options.params[token.name];
-            }
-        });
-
         // wrap by bluebird
         // support Cancellation
         return new Promise((resolve, reject, onCancel) => {
-            options = lodash.assign({
-                url: Model.url(allData) + '.json'
-            }, Model.options, options);
+            options = lodash.assign({}, Model.options, options, {
+                url: options.url(allData) + '.json'
+            });
 
             // clean
             if(!rUpdateMethod.test(options.method)) {
@@ -128,37 +133,28 @@ export default class ModelBase {
         });
     }
 
-    static extend(url, actions, staticProps, options) {
+    // Mode.extend
+    static extend(baseUrl, actions, staticProps, options) {
         const Model = class Model extends this {};
-
-        // TODO
-        const urlTokens = pathToRegexp.parse(url);
-
-        // optional last token
-        const urlLastToken = urlTokens[urlTokens.length - 1];
-        if(typeof urlLastToken === 'object') {
-            urlLastToken.optional = true;
-        }
-
-        Model.url = pathToRegexp.tokensToFunction(urlTokens);
-        Model.urlTokens = urlTokens;
         Model.options = options;
+        Model.baseUrl = baseUrl;
 
-        // staic props
+        // static props
         lodash.assign(Model, staticProps);
 
         // actions
-        lodash.forEach(actions, (action, name) => {
-            Model.addAction(name, action);
+        lodash.forEach(actions, (actionInfo, name) => {
+            actionInfo.url = urlGenerator(Model.baseUrl + (actionInfo.url || ''));
+            Model.addAction(name, actionInfo);
         });
 
         return Model;
     }
 
-    static addAction(name, action) {
-        const method = action.method;
-        const hasPagination = action.hasPagination;
-        const isArrayResult = !!(action.isArray || hasPagination);
+    static addAction(name, actionInfo) {
+        const method = actionInfo.method;
+        const hasPagination = actionInfo.hasPagination;
+        const isArrayResult = !!(actionInfo.isArray || hasPagination);
         const isUpdateMethod = rUpdateMethod.test(method);
 
         this.prototype['$' + name] = function(params) {
@@ -176,24 +172,23 @@ export default class ModelBase {
             return Model[name](params, this).$promise;
         };
 
-        this[name] = function(params, data) {
+        this[name] = function(params) {
             const Model = this;
             const ModelOptions = Model.options || {};
 
-            // switch params
-            if(isUpdateMethod) {
-                [data, params] = [params, data];
-            }
+            let queryParams = null;
+            let dataParams = null;
+            isUpdateMethod ? dataParams = params : queryParams = params;
 
-            // mixin params
-            params = lodash.assign({}, action.params, params);
+            // mixin queryParams
+            queryParams = lodash.assign({}, actionInfo.params, queryParams);
 
             // getPagination
             const getPagination = ModelOptions.getPagination
                 ? ModelOptions.getPagination
                 : defaultGetPagination;
 
-            const model = (data instanceof Model) ? data : new Model(data);
+            const model = (dataParams instanceof Model) ? dataParams : new Model(dataParams);
             const result = isArrayResult
                 ? hasPagination
                     ? {
@@ -208,18 +203,18 @@ export default class ModelBase {
             }
 
             // cacher, only support non update method
-            const cacher = action.cacher || Model.cacher;
-            const allowCacher = action.allowCacher;
+            const cacher = actionInfo.cacher || Model.cacher;
+            const allowCacher = actionInfo.allowCacher;
             const fetchCache = () => {
                 if(!isUpdateMethod && allowCacher && cacher) {
-                    const cache = cacher.get(params, Model, result);
+                    const cache = cacher.get(queryParams, Model, result);
 
                     lodash.merge(result, cache);
                 }
             };
             const updateCache = () => {
                 if(!isUpdateMethod && allowCacher && cacher) {
-                    cacher.set(result, params, Model);
+                    cacher.set(result, queryParams, Model);
                 }
             };
 
@@ -227,9 +222,9 @@ export default class ModelBase {
 
             // options
             const options = lodash.assign({
-                params: params,
+                params: queryParams,
                 data: model
-            }, action);
+            }, actionInfo);
 
             // set $resolved
             model.$set.call(result, '$resolved', false);
