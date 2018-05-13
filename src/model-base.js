@@ -42,7 +42,7 @@ const urlGenerator = (url) => {
     //     urlLastToken.optional = true;
     // }
 
-    return pathToRegexp.tokensToFunction(urlTokens);
+    return [urlTokens, pathToRegexp.tokensToFunction(urlTokens)];
 };
 
 export default class ModelBase {
@@ -92,7 +92,7 @@ export default class ModelBase {
         this[key] = val;
     }
 
-    $request(options) {
+    $request(urlTokens, options) {
         const Model = this.constructor;
 
         options = lodash.clone(options);
@@ -105,6 +105,13 @@ export default class ModelBase {
             options.params,
             options.data
         );
+
+        // fix params
+        lodash.forEach(urlTokens, token => {
+            if(token && token.name) {
+                delete options.params[token.name];
+            }
+        });
 
         // wrap by bluebird
         // support Cancellation
@@ -144,7 +151,7 @@ export default class ModelBase {
 
         // actions
         lodash.forEach(actions, (actionInfo, name) => {
-            actionInfo.url = urlGenerator(Model.baseUrl + (actionInfo.url || ''));
+            [actionInfo.tokens, actionInfo.url] = urlGenerator(Model.baseUrl + (actionInfo.url || ''));
             Model.addAction(name, actionInfo);
         });
 
@@ -229,49 +236,52 @@ export default class ModelBase {
             // set $resolved
             model.$set.call(result, '$resolved', false);
 
-            result.$promise = model.$request(options)
-            .then(response => {
-                const data = response.data;
+            result.$promise = model.$request(actionInfo.tokens, options)
+                .then(response => {
+                    const data = response.data;
 
-                result.$response = response;
+                    result.$response = response;
 
-                if(isArray(data) !== isArrayResult) {
-                    throw new Error(`Model.${name} expected an ${isArrayResult ? 'array' : 'object'} but got an ${isArray(data) ? 'array' : 'object'}`);
-                }
-
-                if(!isArrayResult) {
-                    model.$set('api', data);
-                    if(name === 'find') {
-                        model.$reset(data['data'][0]);
+                    if(isArray(data) !== isArrayResult) {
+                        throw new Error(`Model.${name} expected an ${isArrayResult ? 'array' : 'object'} but got an ${isArray(data) ? 'array' : 'object'}`);
                     }
-                    else { // what the jb eslint rule?
-                        model.$set('data', data['data']);
+
+                    if(!isArrayResult) {
+                        model.$set('api', data);
+                        if(name === 'find') {
+                            model.$reset(data['data']);
+                        }
+                        else { // what the jb eslint rule?
+                            model.$set('data', data['data']);
+                        }
                     }
-                }
-                else {
-                    const items = hasPagination ? result.items : result;
+                    else {
+                        const items = hasPagination ? result.items : result;
 
-                    // fill items
-                    items.length = 0;
-                    data.forEach(item => {
-                        items.push(new Model(item));
-                    });
+                        // fill items
+                        items.length = 0;
+                        data.forEach(item => {
+                            items.push(new Model(item));
+                        });
 
-                    if(hasPagination) {
-                        const pagination = getPagination(response);
-                        lodash.assign(result.pagination, pagination);
+                        if(hasPagination) {
+                            const pagination = getPagination(response);
+                            lodash.assign(result.pagination, pagination);
+                        }
                     }
-                }
 
-                // update cache
-                updateCache();
+                    // update cache
+                    updateCache();
 
-                return result;
-            })
-            .finally(() => {
-                model.$set.call(result, '$resolved', true);
-            });
+                    return result;
+                }, _rejected => {
+                    return null;
+                })
+                .finally(() => {
+                    model.$set.call(result, '$resolved', true);
+                });
 
+            // asynchronous return
             return result;
         };
     }
