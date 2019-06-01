@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/SkippingCat/v-model#readme",
   "dependencies": {
-    "axios": "^0.15.3",
+    "axios": "^0.19.0",
     "bluebird": "^3.5.0",
     "path-to-regexp": "^1.7.0"
   },
